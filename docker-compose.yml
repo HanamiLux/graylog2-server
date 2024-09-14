@@ -1,0 +1,40 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    environment:
+      - plugins.security.disabled=true
+      - discovery.type=single-node
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+    volumes:
+      - os_data:/usr/share/opensearch/data
+    restart: always
+
+  graylog:
+    image: graylog/graylog:6.0
+    environment:
+      - GRAYLOG_PASSWORD_SECRET=${GRAYLOG_PASSWORD_SECRET}
+      - GRAYLOG_ROOT_PASSWORD_SHA2=${GRAYLOG_ROOT_PASSWORD_SHA2}
+      - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0:9000
+      - GRAYLOG_ELASTICSEARCH_HOSTS=http://graylog2-server-opensearch-1:9200
+      - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+      - GRAYLOG_LOG_LEVEL=DEBUG
+    ports:
+      - "9000:9000"   # Web interface
+      - "12201:12201/udp" # GELF UDP
+    volumes:
+      - graylog_data:/usr/share/graylog/data
+    depends_on:
+      - mongodb
+      - opensearch
+    restart: always
+
+volumes:
+  mongodb_data:
+  os_data:
+  graylog_data:
